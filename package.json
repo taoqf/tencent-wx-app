@@ -1,0 +1,31 @@
+{
+	"name": "tencent-wx-app",
+	"version": "1.0.0",
+	"description": "weixin app",
+	"types": "index.d.ts",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/taoqf/tencent-wx-app.git"
+	},
+	"scripts": {
+		"test": "tsc"
+	},
+	"keywords": [
+		"微信",
+		"小程序",
+		"weixin",
+		"wx",
+		"tencent",
+		"weapp",
+		"typescript"
+	],
+	"author": "taoqf",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/taoqf/tencent-wx-app/issues"
+	},
+	"homepage": "https://github.com/taoqf/tencent-wx-app#readme",
+	"devDependencies": {
+		"typescript": "next"
+	}
+}
