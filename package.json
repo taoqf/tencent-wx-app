@@ -1,6 +1,6 @@
 {
 	"name": "tencent-wx-app",
-	"version": "1.0.0",
+	"version": "1.0.0-dev.201708101511",
 	"description": "weixin app",
 	"types": "index.d.ts",
 	"repository": {
