@@ -2076,6 +2076,7 @@ declare namespace wx {
 		 *    2. 单次设置的数据不能超过1024kB，请尽量避免一次设置过多的数据。
 		 */
 		setData(data: any): void;
+		data: any;
 	}
 	/**
 	 * Page() 函数用来注册一个页面。
