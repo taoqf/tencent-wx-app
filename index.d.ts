@@ -7,10 +7,6 @@ declare namespace wx {
 		/** 成功：ok，错误：详细信息 */
 		errMsg: 'ok' | string;
 	}
-	interface TempFileResponse {
-		/** 文件的临时路径 */
-		tempFilePath: string;
-	}
 
 	interface PageOptions {
 		/** 页面的初始数据 */
@@ -25,6 +21,24 @@ declare namespace wx {
 		onHide?(this: Page): void;
 		/** 生命周期函数--监听页面卸载 */
 		onUnload?(this: Page): void;
+		getPhoneNumber?(e: {
+			detail: {
+				errMsg: string;
+				iv: string;
+				encryptedData: string;
+			}
+		}): void;
+		onShareAppMessage(options: {
+			from: 'button' | 'menu';	// 转发事件来源。button：页面内转发按钮；menu：右上角转发菜单
+			target?: any;	// 如果 from 值是 button，则 target 是触发这次转发事件的 button，否则为 undefined
+		}): {
+			title?: string;	// 转发标题	当前小程序名称
+			path?: string;	// 转发路径	当前页面 path ，必须是以 / 开头的完整路径
+			imageUrl?: string;	// 自定义图片路径，可以是本地文件路径、代码包文件路径或者网络图片路径，支持PNG及JPG，不传入 imageUrl 则使用默认截图。iOS 显示图片长宽比是 5:4，Android 显示图片长宽比是 215:168。高度超出部分会从底部裁剪。推荐使用 Android 图片长宽比，可保证图片在两个平台都完整显示，其中 iOS 底部会出现一小段白色		1.5.0
+			success?(res: {
+				shareTickets: string[];
+			}): void;
+		} & BaseOptions;
 		[key: string]: any;
 	}
 
@@ -70,6 +84,7 @@ declare namespace wx {
 		header?: RequestHeader;
 		/** 默认为 GET，有效值：OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT */
 		method?: string;
+		dataType?: 'json';	// 如果设为json，会尝试对返回的数据做一次 JSON.parse
 		/** 收到开发者服务成功返回的回调函数，res = {data: '开发者服务器返回的内容'} */
 		success?(res: DataResponse): void;
 	}
@@ -80,6 +95,10 @@ declare namespace wx {
 }
 // 上传下载
 declare namespace wx {
+	interface UploadFileResponse {
+		data: string;		// 开发者服务器返回的数据
+		statusCode: number;	// 开发者服务器返回的 HTTP 状态码
+	}
 	interface UploadFileOptions extends BaseOptions {
 		/** 开发者服务器 url */
 		url: string;
@@ -91,6 +110,18 @@ declare namespace wx {
 		header?: RequestHeader;
 		/** HTTP 请求中其他额外的 form data */
 		formData?: any;
+		success?(res: UploadFileResponse): void;
+	}
+
+	interface UploadProgressUpdate {
+		progress: number;	// 上传进度百分比
+		totalBytesSent: number;	// 已经上传的数据长度，单位 Bytes
+		totalBytesExpectedToSend: number;	// 预期需要上传的数据总长度，单位 Bytes
+	}
+
+	interface UploadTask {
+		onProgressUpdate(update: UploadProgressUpdate): void;	// 监听上传进度变化	1.4.0
+		abort(): void;	//		中断上传任务	1.4.0
 	}
 	/**
 	 * 将本地资源上传到开发者服务器。
@@ -99,17 +130,20 @@ declare namespace wx {
 	 * 客户端发起一个 HTTPS POST 请求，
 	 * 其中 Content-Type 为 multipart/form-data 。
 	 */
-	function uploadFile(options: UploadFileOptions): void;
+	function uploadFile(options: UploadFileOptions): UploadTask;
+
+	interface DownloadFileResponse {
+		tempFilePath: string;	// 临时文件路径，下载后的文件会存储到一个临时文件
+		statusCode: number;		// 开发者服务器返回的 HTTP 状态码
+	}
 
 	interface DownloadFileOptions extends BaseOptions {
 		/** 下载资源的 url */
 		url: string;
-		/** 下载资源的类型，用于客户端识别处理，有效值：image/audio/video */
-		type?: string;
-		/** HTTP 请求 Header */
+		/** HTTP 请求 Header，header 中不能设置 Referer */
 		header?: RequestHeader;
 		/** 下载成功后以 tempFilePath 的形式传给页面，res = {tempFilePath: '文件的临时路径'} */
-		success?(res: TempFileResponse): void;
+		success?(res: DownloadFileResponse): void;
 	}
 	/**
 	 * 下载文件资源到本地。客户端直接发起一个 HTTP GET 请求，
@@ -126,8 +160,9 @@ declare namespace wx {
 		data?: any;
 		/** HTTP Header , header 中不能设置 Referer */
 		header?: RequestHeader;
-		/** 默认是GET，有效值为： OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT */
-		method?: string;
+		/** 默认是GET */
+		method?: 'OPTIONS' | 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'TRACE' | 'CONNECT';
+		protocols?: string[];	// 子协议数组
 	}
 	/**
 	 * 创建一个 WebSocket 连接；
@@ -145,7 +180,7 @@ declare namespace wx {
 
 	interface SendSocketMessageOptions extends BaseOptions {
 		/** 需要发送的内容 */
-		data: string;
+		data: string | ArrayBuffer;
 	}
 	/**
 	 * 通过 WebSocket 连接发送数据，需要先 wx.connectSocket，
@@ -158,10 +193,15 @@ declare namespace wx {
 	 */
 	function onSocketMessage(callback: (res: DataResponse) => void): void;
 
+	interface CloseSocketOptions extends BaseOptions {
+		code?: number;	// 一个数字值表示关闭连接的状态号，表示连接被关闭的原因。如果这个参数没有被指定，默认的取值是1000 （表示正常连接关闭）	1.4.0
+		reason?: string;	// 一个可读的字符串，表示连接被关闭的原因。这个字符串必须是不长于123字节的UTF-8 文本（不是字符）
+	}
+
 	/**
 	 * 关闭WebSocket连接。
 	 */
-	function closeSocket(): void;
+	function closeSocket(options: CloseSocketOptions): void;
 
 	/** 监听WebSocket关闭。 */
 	function onSocketClose(callback: () => void): void;
@@ -176,6 +216,7 @@ declare namespace wx {
 	interface TempFilesData {
 		/** 文件的临时路径 */
 		tempFilePaths: string;
+		tempFiles: File[];	// 图片的本地文件列表，每一项是一个 File 对象	1.2.0
 	}
 	interface ChooseImageOptions extends BaseOptions {
 		/** 最多可以选择的图片张数，默认9 */
@@ -208,189 +249,149 @@ declare namespace wx {
 		 * 图片的路径，可以是相对路径，临时文件路径，存储文件路径，网络图片路径
 		 */
 		src: string;
+		success?(ret: {
+			width: number;	// 图片宽度，单位px
+			height: number;	// 图片高度，单位px
+			path: string;	// 返回图片的本地路径
+		}): void;
 	}
 
 	/**
 	 * 获取图片信息
 	 */
 	function getImageInfo(options: GetImageInfoOptions): void;
+
+	interface SaveImageToPhotosAlbumOption {
+		filePath: string;	// 图片文件路径，可以是临时文件路径也可以是永久文件路径，不支持网络图片路径
+		success?(errMsg: string): void;	// 接口调用成功的回调函数
+	}
+
+	/** 保存图片到系统相册。需要用户授权 scope.writePhotosAlbum */
+	function saveImageToPhotosAlbum(options?: SaveImageToPhotosAlbumOption): void;
 }
-// 媒体-----录音
+// 媒体-----录音管理
 declare namespace wx {
-	interface StartRecordOptions extends BaseOptions {
-		/** 录音成功后调用，返回录音文件的临时文件路径，res = {tempFilePath: '录音文件的临时路径'} */
-		success?(res: TempFileResponse): void;
+	interface RecordManager {
+		start(options: {
+			duration?: number;	// 指定录音的时长，单位 ms ，如果传入了合法的 duration ，在到达指定的 duration 后会自动停止录音，最大值 600000（10 分钟）,默认值 60000（1 分钟）
+			sampleRate?: 8000 | 11025 | 12000 | 16000 | 22050 | 24000 | 32000 | 44100 | 48000;	// 采样率，有效值 8000/16000/44100
+			numberOfChannels?: number;	// 录音通道数，有效值 1/2
+			encodeBitRate?: number;	// 编码码率，有效值见下表格
+			format?: 'aac' | 'mp3';	//	音频格式，有效值 aac/mp3
+			frameSize?: number;	// 指定帧大小，单位 KB。传入 frameSize 后，每录制指定帧大小的内容后，会回调录制的文件内容，不指定则不会回调。暂仅支持 mp3 格式。
+		}): void;	// 开始录音
+		pause(): void;	// 暂停录音
+		resume(): void;	// 继续录音
+		stop(): void;	// 停止录音
+		onStart(callback: (data: {
+			tempFilePath: string;	// 录音文件的临时路径
+		}) => void): void;	// 录音开始事件
+		onPause(callback: () => void): void;	// 录音暂停事件
+		onStop(callback: (data: {
+			tempFilePath: string;	// 录音文件的临时路径
+		}) => void): void;	// 录音停止事件，会回调文件地址
+		onFrameRecorded(callback: (data: {
+			frameBuffer: ArrayBuffer;	// 录音分片结果数据
+			isLastFrame: boolean;	// 当前帧是否正常录音结束前的最后一帧
+		}) => void): void;	// 已录制完指定帧大小的文件，会回调录音分片结果数据。如果设置了 frameSize ，则会回调此事件
+		onError(callback: (errMsg: string) => void): void;	// 录音错误事件, 会回调错误信息
 	}
 
-	/**
-	 * 开始录音。当主动调用wx.stopRecord，
-	 * 或者录音超过1分钟时自动结束录音，返回录音文件的临时文件路径。
-	 * 注：文件的临时路径，在小程序本次启动期间可以正常使用，
-	 * 如需持久保存，需在主动调用wx.saveFile，在小程序下次启动时才能访问得到。
-	 */
-	function startRecord(options: StartRecordOptions): void;
-
-	/**
-	 * ​ 主动调用停止录音。
-	 */
-	function stopRecord(): void;
+	/** 获取全局唯一的录音管理器 recorderManager。 */
+	function getRecorderManager(): RecordManager;
 }
-// 媒体-----音频播放控制
+// 媒体-----背景音乐播放管理
 declare namespace wx {
-	interface PlayVoiceOptions extends BaseOptions {
-		/** 需要播放的语音文件的文件路径 */
-		filePath: string;
+	interface BackgroundAudioManager {
+		readonly duration: number;	// 当前音频的长度（单位：s），只有在当前有合法的 src 时返回
+		readonly currentTime: number;	// 当前音频的播放位置（单位：s），只有在当前有合法的 src 时返回
+		readonly paused: boolean;	// 当前是是否暂停或停止状态，true 表示暂停或停止，false 表示正在播放
+		src: 'm4a' | 'aac' | 'mp3' | 'wav';	// 音频的数据源，默认为空字符串，当设置了新的 src 时，会自动开始播放 ，目前支持的格式有 m4a, aac, mp3, wav
+		startTime: number;	// 音频开始播放的位置（单位：s）
+		readonly buffered: number;	// 音频缓冲的时间点，仅保证当前播放时间点到此时间点内容已缓冲。
+		title: string;	// 音频标题，用于做原生音频播放器音频标题。原生音频播放器中的分享功能，分享出去的卡片标题，也将使用该值。
+		epname: string;	// 专辑名，原生音频播放器中的分享功能，分享出去的卡片简介，也将使用该值。
+		singer: string;	// 歌手名，原生音频播放器中的分享功能，分享出去的卡片简介，也将使用该值。
+		coverImgUrl: string;	// 封面图url，用于做原生音频播放器背景图。原生音频播放器中的分享功能，分享出去的卡片配图及背景也将使用该图。
+		webUrl: string;	// 页面链接，原生音频播放器中的分享功能，分享出去的卡片简介，也将使用该值。
 	}
 	/**
-	 * 开始播放语音，同时只允许一个语音文件正在播放，
-	 * 如果前一个语音文件还没播放完，将中断前一个语音播放。
+	 * @see [errcode 说明](https://mp.weixin.qq.com/debug/wxadoc/dev/api/getBackgroundAudioManager.html)
 	 */
-	function playVoice(options: PlayVoiceOptions): void;
-
-	/**
-	 * 暂停正在播放的语音。
-	 * 再次调用wx.playVoice播放同一个文件时，会从暂停处开始播放。
-	 * 如果想从头开始播放，需要先调用 wx.stopVoice。
-	 */
-	function pauseVoice(): void;
-
-	/**
-	 * 结束播放语音。
-	 */
-	function stopVoice(): void;
-}
-// 媒体-----音乐播放控制
-declare namespace wx {
-	interface BackgroundAudioPlayerState {
-		/** 选定音频的长度（单位：s），只有在当前有音乐播放时返回 */
-		duration?: number;
-		/** 选定音频的播放位置（单位：s），只有在当前有音乐播放时返回 */
-		currentPosition?: number;
-		/** 播放状态（2：没有音乐在播放，1：播放中，0：暂停中） */
-		status: number;
-		/** 音频的下载进度（整数，80 代表 80%），只有在当前有音乐播放时返回 */
-		downloadPercent?: number;
-		/** 歌曲数据链接，只有在当前有音乐播放时返回 */
-		dataUrl?: string;
+	interface BackgroundAudioManager {
+		play(): void;	// 播放
+		pause(): void;	// 暂停
+		stop(): void;	// 停止
+		seek(position: number): void;	// 跳转到指定位置，单位 s
+		onCanplay(callback: (errCode: number) => {}): void;	// 背景音频进入可以播放状态，但不保证后面可以流畅播放
+		onPlay(callback: (errCode: number) => {}): void;	// 背景音频播放事件
+		onPause(callback: (errCode: number) => {}): void;	// 背景音频暂停事件
+		onStop(callback: (errCode: number) => {}): void;	// 背景音频停止事件
+		onEnded(callback: (errCode: number) => {}): void;	// 背景音频自然播放结束事件
+		onTimeUpdate(callback: (errCode: number) => {}): void;	// 背景音频播放进度更新事件
+		onPrev(callback: (errCode: number) => {}): void;	// 用户在系统音乐播放面板点击上一曲事件（iOS only）
+		onNext(callback: (errCode: number) => {}): void;	// 用户在系统音乐播放面板点击下一曲事件（iOS only）
+		onError(callback: (errCode: number) => {}): void;	// 背景音频播放错误事件
+		onWaiting(callback: (errCode: number) => {}): void;	// 音频加载中事件，当音频因为数据不足，需要停下来加载时会触发
 	}
-	type GetBackgroundAudioPlayerStateSuccessCallback = (state: BackgroundAudioPlayerState) => void;
-	interface GetBackgroundAudioPlayerStateOptions extends BaseOptions {
-		/** 接口调用成功的回调函数 */
-		success?: GetBackgroundAudioPlayerStateSuccessCallback;
-		/** 接口调用失败的回调函数 */
-		fail?(): void;
-		/** 接口调用结束的回调函数（调用成功、失败都会执行） */
-		complete?(): void;
-	}
-	/** 获取音乐播放状态。 */
-	function getBackgroundAudioPlayerState(options: GetBackgroundAudioPlayerStateOptions): void;
-
-	interface PlayBackgroundAudioOptions extends BaseOptions {
-		/** 音乐链接 */
-		dataUrl: string;
-		/** 音乐标题 */
-		title?: string;
-		/** 封面URL */
-		coverImgUrl?: string;
-	}
-	/** 播放音乐，同时只能有一首音乐正在播放。 */
-	function playBackgroundAudio(options: PlayBackgroundAudioOptions): void;
-
-	/** 暂停播放音乐。 */
-	function pauseBackgroundAudio(): void;
-
-	interface SeekBackgroundAudioOptions extends BaseOptions {
-		/** 音乐位置，单位：秒 */
-		position: number;
-	}
-	/**
-	 * 控制音乐播放进度。
-	 */
-	function seekBackgroundAudio(options: SeekBackgroundAudioOptions): void;
-
-	/**
-	 * 停止播放音乐。
-	 */
-	function stopBackgroundAudio(): void;
-
-	/** 监听音乐播放。 */
-	function onBackgroundAudioPlay(callback: () => void): void;
-
-	/** 监听音乐暂停。 */
-	function onBackgroundAudioPause(callback: () => void): void;
-
-	/** 监听音乐停止。 */
-	function onBackgroundAudioStop(callback: () => void): void;
+	/** 获取全局唯一的背景音频管理器 backgroundAudioManager。 */
+	function getBackgroundAudioManager(): BackgroundAudioManager;
 }
 // 媒体-----音频组件控制
 declare namespace wx {
-	/**
-	 * audioContext 通过 audioId 跟一个 <audio/> 组件绑定，通过它可以操作对应的 <audio/> 组件。
-	 */
-	interface AudioContext {
-		/**
-		 * 音频的地址
-		 */
-		setSrc(src: string): void;
-		/**
-		 * 播放
-		 */
-		play(): void;
-		/**
-		 * 暂停
-		 */
-		pause(): void;
-		/**
-		 * 跳转到指定位置，单位 s
-		 */
-		seek(position: number): void;
+	interface InnerAudioContext {
+		src: string;	// 音频的数据链接，用于直接播放。
+		startTime: number;	// 开始播放的位置（单位：s），默认 0
+		autoplay: boolean;	// 是否自动开始播放，默认 false
+		loop: boolean;	//	是否循环播放，默认 false
+		obeyMuteSwitch: boolean;	//	是否遵循系统静音开关，当此参数为 false 时，即使用户打开了静音开关，也能继续发出声音，默认值 true
+		readonly duration: number;	// 当前音频的长度（单位：s），只有在当前有合法的 src 时返回
+		readonly currentTime: number;	// 当前音频的播放位置（单位：s），只有在当前有合法的 src 时返回，时间不取整，保留小数点后 6 位
+		readonly paused: boolean;	// 当前是是否暂停或停止状态，true 表示暂停或停止，false 表示正在播放
+		readonly buffered: number;	// 音频缓冲的时间点，仅保证当前播放时间点到此时间点内容已缓冲。
 	}
 
 	/**
-	 * 创建并返回 audio 上下文 audioContext 对象
-	 * @param audioId audio标签id <audio  src="{{src}}" id="myAudio" ></audio>
-	 * @example
-	 * <!-- audio.wxml -->
-	 * <audio  src="{{src}}" id="myAudio" ></audio>
-	 * <button type="primary" bindtap="audioPlay">播放</button>
-	 * <button type="primary" bindtap="audioPause">暂停</button>
-	 * <button type="primary" bindtap="audio14">设置当前播放时间为14秒</button>
-	 * <button type="primary" bindtap="audioStart">回到开头</button>
-	 * // audio.js
-	 * Page({
-	 * onReady: function (e) {
-	 * 	// 使用 wx.createAudioContext 获取 audio 上下文 context
-	 * 	this.audioCtx = wx.createAudioContext('myAudio')
-	 * 	this.audioCtx.setSrc('http://ws.stream.qqmusic.qq.com/
-	 * M500001VfvsJ21xFqb.mp3?guid=ffffffff82def4af4b12b3cd9337d5e7&
-	 * uin=346897220&vkey=6292F51E1E384E06DCBDC9AB7C49FD713D632D313AC4858BACB8DDD29067D3C601481D36E62053BF8DFEAF74C0A5CCFADD6471160CAF3E6A&
-	 * fromtag=46')
-	 * 	this.audioCtx.play()
-	 * },
-	 * data: {
-	 * 	src: ''
-	 * },
-	 * audioPlay: function () {
-	 * 	this.audioCtx.play()
-	 * },
-	 * audioPause: function () {
-	 * 	this.audioCtx.pause()
-	 * },
-	 * audio14: function () {
-	 * 	this.audioCtx.seek(14)
-	 * },
-	 * audioStart: function () {
-	 * 	this.audioCtx.seek(0)
-	 * }
-	 * })
+	 * @see [errCode 说明](https://mp.weixin.qq.com/debug/wxadoc/dev/api/createInnerAudioContext.html)
 	 */
-	function createAudioContext(audioId: string): AudioContext;
+	interface InnerAudioContext {
+		play(): void;	// 播放
+		pause(): void;	// 暂停
+		stop(): void;	// 停止
+		seek(position: number): void;	// 跳转到指定位置，单位 s
+		destroy(): void;	// 销毁当前实例
+		onCanplay(callback: (errCode: number) => {}): void;	// 音频进入可以播放状态，但不保证后面可以流畅播放
+		onPlay(callback: (errCode: number) => {}): void;	// 音频播放事件
+		onPause(callback: (errCode: number) => {}): void;	// 音频暂停事件
+		onStop(callback: (errCode: number) => {}): void;	// 音频停止事件
+		onEnded(callback: (errCode: number) => {}): void;	// 音频自然播放结束事件
+		onTimeUpdate(callback: (errCode: number) => {}): void;	// 音频播放进度更新事件
+		onError(callback: (errCode: number) => {}): void;	// 音频播放错误事件
+		onWaiting(callback: (errCode: number) => {}): void;	// 音频加载中事件，当音频因为数据不足，需要停下来加载时会触发
+		onSeeking(callback: (errCode: number) => {}): void;	// 音频进行 seek 操作事件
+		onSeeked(callback: (errCode: number) => {}): void;	// 音频完成 seek 操作事件
+	}
+	function createInnerAudioContext(): InnerAudioContext;
 }
 // 媒体-----视频
 declare namespace wx {
+	interface VideoData {
+		/** 选定视频的临时文件路径 */
+		tempFilePath: string;
+		/** 选定视频的时间长度 */
+		duration: number;
+		/** 选定视频的数据量大小 */
+		size: number;
+		/** 返回选定视频的长 */
+		height: number;
+		/** 返回选定视频的宽 */
+		width: number;
+	}
 	interface ChooseVideoOptions extends BaseOptions {
 		/** album 从相册选视频，camera 使用相机拍摄，默认为：['album', 'camera'] */
 		sourceType?: VideoSourceType[];
+		/** 是否压缩所选的视频源文件，默认值为true，需要压缩 */
+		compressed?: boolean;
 		/** 拍摄视频最长拍摄时间，单位秒。最长支持60秒 */
 		maxDuration?: number;
 		/** 前置或者后置摄像头，默认为前后都有，即：['front', 'back'] */
@@ -402,6 +403,14 @@ declare namespace wx {
 	 * 拍摄视频或从手机相册中选视频，返回视频的临时文件路径。
 	 */
 	function chooseVideo(options: ChooseVideoOptions): void;
+
+	interface SaveVideoOptions extends BaseOptions {
+		filePath: string;	// 视频文件路径，可以是临时文件路径也可以是永久文件路径
+		success(errMsg: string): void;
+	}
+
+	/** 保存视频到系统相册。需要用户授权 scope.writePhotosAlbum */
+	function saveVideoToPhotosAlbum(options: SaveVideoOptions): void;
 }
 // 媒体-----视频组件控制
 declare namespace wx {
@@ -425,25 +434,36 @@ declare namespace wx {
 			text: string;
 			color: number | string;
 		}): void;
+
+		playbackRate(rate: 0.5 | 0.8 | 1.0 | 1.25 | 1.5): void;	// 设置倍速播放，支持的倍率有 0.5/0.8/1.0/1.25/1.5
+		requestFullScreen(): void;	// 进入全屏
+		exitFullScreen(): void;	// 退出全屏
 	}
 
-	interface VideoData {
-		/** 选定视频的临时文件路径 */
-		tempFilePath: string;
-		/** 选定视频的时间长度 */
-		duration: number;
-		/** 选定视频的数据量大小 */
-		size: number;
-		/** 返回选定视频的长 */
-		height: number;
-		/** 返回选定视频的宽 */
-		width: number;
-	}
 	/**
-	 * 创建并返回 video 上下文 videoContext 对象
+	 * 创建并返回 video 上下文 videoContext 对象.在自定义组件下，第二个参数传入组件实例this，以操作组件内 <video/> 组件
 	 * @param videoId video标签id <video  src="{{src}}" id="myVideo" ></video>
 	 */
-	function createVideoContext(videoId: string): VideoContext;
+	function createVideoContext(videoId: string, _this?: any): VideoContext;
+}
+// 媒体-----相机组件控制
+declare namespace wx {
+	interface CameraContext {
+		takePhoto: {
+			quality?: 'high' | 'normal' | 'low';	// 成像质量，值为high, normal, low，默认normal
+			success?(res: { tempImagePath: string; }): void;
+		} & BaseOptions;	// 拍照，可指定质量，成功则返回图片
+		startRecord: {
+			timeoutCallback?(res: { tempThumbPath: string; tempVideoPath: string; }): void;	// 超过30s或页面onHide时会结束录像，res = { tempThumbPath, tempVideoPath }
+		} & BaseOptions;	// 开始录像
+		stopRecord: {
+			success?(res: { tempThumbPath: string; tempVideoPath: string; }): void;
+		} & BaseOptions;	// 结束录像，成功则返回封面与视频
+	}
+	/**
+	 * 创建并返回 camera 上下文 cameraContext 对象，cameraContext 与页面的 camera 组件绑定，一个页面只能有一个camera，通过它可以操作对应的 <camera/> 组件。 在自定义组件下，第一个参数传入组件实例this，以操作组件内 <camera/> 组件
+	 */
+	function createCameraContext(_this?: any): CameraContext;
 }
 // 文件
 declare namespace wx {
@@ -531,6 +551,7 @@ declare namespace wx {
 		 * 文件路径，可通过 downFile 获得
 		 */
 		filePath: string;
+		fileType?: 'doc' | 'xls' | 'ppt' | 'pdf' | 'docx' | 'xlsx' | 'pptx';	// 文件类型，指定文件类型打开文件，有效值 doc, xls, ppt, pdf, docx, xlsx, pptx
 	}
 	/**
 	 * 新开页面打开文档，支持格式：doc, xls, ppt, pdf, docx, xlsx, pptx
@@ -627,6 +648,9 @@ declare namespace wx {
 		speed: number;
 		/** 位置的精确度 */
 		accuracy: number;
+		altitude: number;	// 高度，单位 m
+		verticalAccuracy: number;	// 垂直精度，单位 m（Android 无法获取，返回 0）
+		horizontalAccuracy: number;	// 水平精度，单位 m
 	}
 
 	interface GetLocationOptions extends BaseOptions {
@@ -687,10 +711,38 @@ declare namespace wx {
 }
 // 位置-----地图组件控制
 declare namespace wx {
+	interface Position {
+		longitude: number;
+		latitude: number;
+	}
 	interface GetCenterLocationOptions extends BaseOptions {
-		success(res: {
-			longitude: number;
-			latitude: number;
+		success(res: Position): void;
+	}
+
+	interface TranslateMarkerOptions extends BaseOptions {
+		markerId: number;	// 指定marker
+		destination: Position;	// 指定marker移动到的目标点
+		autoRotate: boolean;	// 移动过程中是否自动旋转marker
+		rotate: number;	// marker的旋转角度
+		duration?: number;	// 动画持续时长，默认值1000ms，平移与旋转分别计算
+		animationEnd?(): void;	// 动画结束回调函数
+	}
+
+	interface IncludePointsOptions extends BaseOptions {
+		points: Position[];	// 要显示在可视区域内的坐标点列表，[{latitude, longitude}]
+		padding?: [number, number, number, number];	// 坐标点形成的矩形边缘到地图边缘的距离，单位像素。格式为[上,右,下,左]，安卓上只能识别数组第一项，上下左右的padding一致。开发者工具暂不支持padding参数。
+	}
+
+	interface GetRegionOptions extends BaseOptions {
+		success?(res: {
+			southwest: number;	// 西南角的经纬度
+			northeast: number;	// 东北角的经纬度
+		}): void;
+	}
+
+	interface GetScaleOptions extends BaseOptions {
+		success?(res: {
+			scale: number;
 		}): void;
 	}
 	/**
@@ -705,19 +757,26 @@ declare namespace wx {
 		 * 将地图中心移动到当前定位点，需要配合map组件的show-location使用
 		 */
 		moveToLocation(): void;
+		translateMarker(options: TranslateMarkerOptions): void;	// 平移marker，带动画
+		includePoints(options: IncludePointsOptions): void;	// 缩放视野展示所有经纬度
+		getRegion(options: GetRegionOptions): void;	// 获取当前地图的视野范围
+		getScale(options: GetScaleOptions): void;	// 获取当前地图的缩放级别
 	}
 	/**
 	 * 创建并返回 map 上下文 mapContext 对象
 	 */
-	function createMapContext(mapId: string): MapContext;
+	function createMapContext(mapId: string, _this?: any): MapContext;
 }
 // 设备-----系统信息
 declare namespace wx {
 	interface SystemInfo {
+		brand: string;	// 手机品牌
 		/** 手机型号 */
 		model: string;
 		/** 设备像素比 */
 		pixelRatio: number;
+		screenWidth: number;	// 屏幕宽度
+		screenHeight: number;	// 屏幕高度
 		/** 窗口宽度 */
 		windowWidth: number;
 		/** 窗口高度 */
@@ -726,6 +785,10 @@ declare namespace wx {
 		language: string;
 		/** 微信版本号 */
 		version: string;
+		system: string;		// 操作系统版本
+		platform: string;	// 客户端平台
+		fontSizeSetting: string;	// 用户字体大小设置。以“我-设置-通用-字体大小”中的设置为准，单位：px
+		SDKVersion: string;	// 客户端基础库版本
 	}
 	interface GetSystemInfoOptions extends BaseOptions {
 		/** 成功获取系统信息的回调 */
@@ -736,6 +799,19 @@ declare namespace wx {
 	 */
 	function getSystemInfo(options: GetSystemInfoOptions): void;
 	function getSystemInfoSync(): SystemInfo;
+
+	/**
+	 * 判断小程序的API，回调，参数，组件等是否在当前版本可用。
+	 * 参数说明： 使用${API}.${method}.${param}.${options}或者${component}.${attribute}.${option}方式来调用，例如：
+	 * ${API} 代表 API 名字
+	 * ${method} 代表调用方式，有效值为return, success, object, callback
+	 * ${param} 代表参数或者返回值
+	 * ${options} 代表参数的可选值
+	 * ${component} 代表组件名字
+	 * ${attribute} 代表组件属性
+	 * ${option} 代表组件属性的可选值
+	 */
+	function canIUse(w: string): boolean;
 }
 // 设备-----网络状态
 declare namespace wx {
@@ -848,7 +924,8 @@ declare namespace wx {
 		path: string;
 	}
 	interface ScanCodeOptions extends BaseOptions {
-		success(res: ScanCodeData): void;
+		onlyFromCamera?: boolean;	// 是否只能从相机扫码，不允许从相册选择图片
+		success?(res: ScanCodeData): void;
 	}
 	/**
 	 * 调起客户端扫码界面，扫码成功后返回对应的结果
@@ -857,22 +934,24 @@ declare namespace wx {
 }
 // 设备-----剪贴板
 declare namespace wx {
-	interface ClipboardDataOptions extends BaseOptions {
+	interface SetClipboardDataOptions extends BaseOptions {
 		data: string;
-		success?(res: DataResponse): void;
 	}
 	/**
 	 * 设置系统剪贴板的内容
 	 * 基础库版本 1.1.0 开始支持，低版本需做兼容处理
 	 * 微信客户端 6.5.6 版本开始支持
 	 */
-	function setClipboardData(options: ClipboardDataOptions): void;
+	function setClipboardData(options: SetClipboardDataOptions): void;
+	interface GetClipboardDataOptions extends BaseOptions {
+		success?(res: DataResponse): void;
+	}
 	/**
 	 * 获取系统剪贴板内容
 	 * 基础库版本 1.1.0 开始支持，低版本需做兼容处理
 	 * 微信客户端 6.5.6 版本开始支持
 	 */
-	function getClipboardData(options: ClipboardDataOptions): void;
+	function getClipboardData(options: GetClipboardDataOptions): void;
 }
 // 设备-----蓝牙
 declare namespace wx {
@@ -1158,6 +1237,129 @@ declare namespace wx {
 		}
 	) => void): void;
 }
+// 设备-----iBeacon
+declare namespace wx {
+	interface StartBeaconOptions extends BaseOptions {
+		uuids: string[];	// iBeacon设备广播的 uuids
+		success?(ret: { errMsg: string; }): void;
+	}
+	/**
+	 * 开始搜索附近的iBeacon设备
+	 */
+	function startBeaconDiscovery(options: StartBeaconOptions): void;
+
+	interface StopBeaconOptions extends BaseOptions {
+		success?(ret: { errMsg: string; }): void;
+	}
+	/**
+	 * 停止搜索附近的iBeacon设备
+	 */
+	function stopBeaconDiscovery(options: StopBeaconOptions): void;
+
+	interface Beacon {
+		uuid?: string;	// iBeacon 设备广播的 uuid
+		major?: string;	// iBeacon 设备的主 id
+		minor?: string;	// iBeacon 设备的次 id
+		proximity: number;	// 表示设备距离的枚举值
+		accuracy: number;	// iBeacon 设备的距离
+		rssi: number;	// 表示设备的信号强度
+	}
+
+	interface GetBeaconOptions extends BaseOptions {
+		success?(ret: { beacons: Beacon[]; errMsg?: string; }): void;
+	}
+	/**
+	 * 获取所有已搜索到的iBeacon设备
+	 */
+	function getBeacons(options: GetBeaconOptions): void;
+
+	function onBeaconUpdate(callback: (beacons: Beacon[]) => void): void;
+	function onBeaconServiceChange(callback: (available: boolean, discovering: boolean) => void): void;
+}
+// 设备-----屏幕亮度
+declare namespace wx {
+	interface SetScreenBrightnessOptions extends BaseOptions {
+		value: number;	// 屏幕亮度值，范围 0~1，0 最暗，1 最亮
+	}
+
+	/**
+	 * 设置屏幕亮度。
+	 */
+	function setScreenBrightness(options: SetScreenBrightnessOptions): void;
+
+	interface GetScreenBrightnessOptions extends BaseOptions {
+		/**
+		 * @param value 屏幕亮度值，范围 0~1，0 最暗，1 最亮
+		 */
+		success?(ret: { value: number; }): void;
+	}
+
+	/**
+	 * 获取屏幕亮度。
+	 * 若安卓系统设置中开启了自动调节亮度功能，则屏幕亮度会根据光线自动调整，该接口仅能获取自动调节亮度之前的值，而非实时的亮度值。
+	 */
+	function getScreenBrightness(options: GetScreenBrightnessOptions): void;
+
+	interface SetKeepScreenOnOptions extends BaseOptions {
+		keepScreenOn: boolean;
+		success(errMsg: string): void;
+	}
+	function setKeepScreenOn(options: SetKeepScreenOnOptions): void;
+}
+// 设备-----用户截屏事件
+declare namespace wx {
+	function onUserCaptureScreen(callback: () => void): void;
+}
+// 设备-----振动
+declare namespace wx {
+	/**
+	 * 使手机发生较长时间的振动（400ms）
+	 */
+	function vibrateLong(options: BaseOptions): void;
+	/**
+	 * 使手机发生较短时间的振动（15ms）
+	 * 仅在 iPhone7/iPhone7Plus 及 Android 机型生效
+	 */
+	function vibrateShort(options: BaseOptions): void;
+}
+// 设备-----手机联系人
+declare namespace wx {
+	interface PhoneContact extends BaseOptions {
+		photoFilePath?: string;	// 头像本地文件路径
+		nickName?: string;	// 昵称
+		lastName?: string;	// 姓氏
+		middleName?: string;	// 中间名
+		firstName: string;	// 名字
+		remark?: string;	// 备注
+		mobilePhoneNumber?: string;	// 手机号
+		weChatNumber?: string;	// 微信号
+		addressCountry?: string;	// 联系地址国家
+		addressState?: string;	// 联系地址省份
+		addressCity?: string;	// 联系地址城市
+		addressStreet?: string;	// 联系地址街道
+		addressPostalCode?: string;	// 联系地址邮政编码
+		organization?: string;	// 公司
+		title?: string;	// 职位
+		workFaxNumber?: string;	// 工作传真
+		workPhoneNumber?: string;	// 工作电话
+		hostNumber?: string;	// 公司电话
+		email?: string;	// 电子邮件
+		url?: string;	// 网站
+		workAddressCountry?: string;	// 工作地址国家
+		workAddressState?: string;	// 工作地址省份
+		workAddressCity?: string;	// 工作地址城市
+		workAddressStreet?: string;	// 工作地址街道
+		workAddressPostalCode?: string;	// 工作地址邮政编码
+		homeFaxNumber?: string;	// 住宅传真
+		homePhoneNumber?: string;	// 住宅电话
+		homeAddressCountry?: string;	// 住宅地址国家
+		homeAddressState?: string;	// 住宅地址省份
+		homeAddressCity?: string;	// 住宅地址城市
+		homeAddressStreet?: string;	// 住宅地址街道
+		homeAddressPostalCode?: string;	// 住宅地址邮政编码
+	}
+	function addPhoneContact(options: PhoneContact): void;
+}
 // 界面-----交互反馈
 declare namespace wx {
 	interface ToastOptions extends BaseOptions {
@@ -1319,10 +1521,31 @@ declare namespace wx {
 	 */
 	function redirectTo(options: RedirectToOptions): void;
 
+	interface SwichTabOptions extends BaseOptions {
+		url: string;	// 需要跳转的 tabBar 页面的路径（需在 app.json 的 tabBar 字段定义的页面），路径后不能带参数
+	}
+	/**
+	 * 跳转到 tabBar 页面，并关闭其他所有非 tabBar 页面
+	 */
+	function switchTab(options: SwichTabOptions): void;
+
+	interface NavigateBackOptions extends BaseOptions {
+		delta?: number;	// 返回的页面数，如果 delta 大于现有页面数，则返回到首页。
+	}
+
 	/**
 	 * 关闭当前页面，回退前一页面。
 	 */
-	function navigateBack(): void;
+	function navigateBack(options?: NavigateBackOptions): void;
+
+	interface RelaunchOptions extends BaseOptions {
+		url: string;	// 需要跳转的应用内页面路径 , 路径后可以带参数。参数与路径之间使用?分隔，参数键与参数值用=相连，不同参数用&分隔；如 'path?key=value&key2=value2'，如果跳转的页面路径是 tabBar 页面则不能带参数
+	}
+
+	/**
+	 * 关闭所有页面，打开到应用内的某个页面。
+	 */
+	function reLaunch(options?: RelaunchOptions): void;
 }
 // 界面-----动画
 declare namespace wx {
@@ -1472,6 +1695,13 @@ declare namespace wx {
 		): Animation;
 	}
 }
+// 界面-----位置
+declare namespace wx {
+	function pageScrollTo(options: {
+		scrollTop: number;	// 滚动到页面的目标位置（单位px）
+	}): void;
+}
+
 // 界面-----绘图
 declare namespace wx {
 	interface CanvasAction {
@@ -1804,10 +2034,83 @@ declare namespace wx {
 		onPullDownRefresh(): void;
 	}
 	/**
+	 * 开始下拉刷新，调用后触发下拉刷新动画，效果与用户手动下拉刷新一致
+	 */
+	function startPullDownRefresh(): void;
+	/**
 	 * 停止当前页面下拉刷新。
-	 *
 	 */
 	function stopPullDownRefresh(): void;
+}
+// WXML节点信息
+declare namespace wx {
+	interface Rect {
+		id: string;      // 节点的ID
+		dataset: any; // 节点的dataset
+		left: number;    // 节点的左边界坐标
+		right: number;   // 节点的右边界坐标
+		top: number;     // 节点的上边界坐标
+		bottom: number;  // 节点的下边界坐标
+		width: number;   // 节点的宽度
+		height: number;  // 节点的高度
+	}
+	interface NodesRef {
+		/**
+		 * 添加节点的布局位置的查询请求，相对于显示区域，以像素为单位。其功能类似于DOM的getBoundingClientRect。返回值是nodesRef对应的selectorQuery。
+		 */
+		boundingClientRect(callback?: (rect: Rect) => void): SelectorQuery;
+		/**
+		 * 添加节点的滚动位置查询请求，以像素为单位。节点必须是scroll-view或者viewport。返回值是nodesRef对应的selectorQuery。
+		 */
+		scrollOffset(callback?: (rect: {
+			id: string;			// 节点的ID
+			dataset: any;	// 节点的dataset
+			scrollLeft: number;	// 节点的水平滚动位置
+			scrollTop: number;	// 节点的竖直滚动位置
+		}) => void): SelectorQuery;
+		fields(options: {
+			id?: boolean;	// 是否返回节点id
+			dataset?: boolean;	// 是否返回节点dataset
+			rect?: boolean;	// 是否返回节点布局位置（left right top bottom）
+			size?: boolean;	// 是否返回节点尺寸（width height）
+			scrollOffset?: boolean;	// 是否返回节点的 scrollLeft scrollTop ，节点必须是scroll-view或者viewport
+			properties?: string[];	// 指定属性名列表，返回节点对应属性名的当前属性值（只能获得组件文档中标注的常规属性值， id class style 和事件绑定的属性值不可获取）
+		}, callback?: (res: { [property: string]: any; }) => void): SelectorQuery;
+	}
+	interface SelectorQuery {
+		/** 将选择器的选取范围更改为自定义组件component内。（初始时，选择器仅选取页面范围的节点，不会选取任何自定义组件中的节点。） */
+		in(component: any): SelectorQuery;
+		/** 在当前页面下选择第一个匹配选择器selector的节点，返回一个NodesRef对象实例，可以用于获取节点信息。 */
+		select(selector: string): NodesRef;
+		/** 在当前页面下选择匹配选择器selector的节点，返回一个NodesRef对象实例。 与selectorQuery.selectNode(selector)不同的是，它选择所有匹配选择器的节点。 */
+		selectAll(selector: string): NodesRef;
+		/** 选择显示区域，可用于获取显示区域的尺寸、滚动位置等信息，返回一个NodesRef对象实例。 */
+		selectViewport(): SelectorQuery;
+		exec(callback?: (res: any[]) => {}): SelectorQuery;
+	}
+
+	/**
+	 * 返回一个SelectorQuery对象实例。可以在这个实例上使用select等方法选择节点，并使用boundingClientRect等方法选择需要查询的信息。
+	 */
+	function createSelectorQuery(): SelectorQuery;
+}
+// 第三方平台
+declare namespace wx {
+	interface GetExtConfigOption extends BaseOptions {
+		success?(ret: {
+			errMsg: string; extConfig?: any;
+		}): void;
+	}
+	/**
+	 * 获取第三方平台自定义的数据字段。
+	 */
+	function getExtConfig(options: GetExtConfigOption): void;
+
+	/**
+	 * 获取第三方平台自定义的数据字段的同步接口。
+	 * 暂时无法通过 wx.canIUse 判断是否兼容，开发者需要自行判断 wx.getExtConfigSync 是否存在来兼容
+	 */
+	function getExtConfigSync(options: GetExtConfigOption): any;
 }
 // 开放接口-----登陆
 // [签名加密](https://mp.weixin.qq.com/debug/wxadoc/dev/api/signature.html)
@@ -1852,6 +2155,20 @@ declare namespace wx {
 	 */
 	function checkSession(options: CheckSessionOption): void;
 }
+// 开放接口-----授权
+declare namespace wx {
+	type Scope = 'scope.userInfo' | 'scope.userLocation' | 'scope.address' | 'scope.invoiceTitle' | 'scope.werun' | 'scope.record' | 'scope.writePhotosAlbum';
+	interface AuthorizeOptions extends BaseOptions {
+		scope: Scope;
+		success?(res: {
+			errMsg: string;
+		}): void;
+	}
+	/**
+	 * 提前向用户发起授权请求。调用后会立刻弹窗询问用户是否同意授权小程序使用某项功能或获取用户的某些数据，但不会实际调用对应接口。如果用户之前已经同意授权，则不会出现弹窗，直接返回成功。
+	 */
+	function authorize(options: AuthorizeOptions): void;
+}
 // 开放接口-----用户信息
 declare namespace wx {
 	interface UserInfo {
@@ -1873,13 +2190,23 @@ declare namespace wx {
 		encryptData: string;
 	}
 	interface GetUserInfoOptions extends BaseOptions {
+		withCredentials?: boolean;	// 是否带上登录态信息
+		lang?: string;	// 指定返回用户信息的语言，zh_CN 简体中文，zh_TW 繁体中文，en 英文。默认为en。
 		/** 接口调用成功的回调函数 */
 		success?(res: UserInfoResponse): void;
 	}
 	/**
 	 * 获取用户信息，需要先调用 wx.login 接口。
+	 * 注：当 withCredentials 为 true 时，要求此前有调用过 wx.login 且登录态尚未过期，此时返回的数据会包含 encryptedData, iv 等敏感信息；当 withCredentials 为 false 时，不要求有登录态，返回的数据不包含 encryptedData, iv 等敏感信息。
 	 */
 	function getUserInfo(options: GetUserInfoOptions): void;
+
+	/**
+	 * 获取微信用户绑定的手机号，需先调用login接口。
+	 * 因为需要用户主动触发才能发起获取手机号接口，所以该功能不由 API 来调用，需用 <button> 组件的点击来触发。
+	 * 注意：目前该接口针对非个人开发者，且完成了认证的小程序开放。需谨慎使用，若用户举报较多或被发现在不必要场景下使用，微信有权永久回收该小程序的该接口权限。
+	 * @see https://mp.weixin.qq.com/debug/wxadoc/dev/api/getPhoneNumber.html
+	 */
 }
 // 开放接口-----微信支付
 declare namespace wx {
@@ -1901,30 +2228,18 @@ declare namespace wx {
 	 */
 	function requestPayment(options: RequestPaymentOptions): void;
 }
-// 开放接口-----分享
+// 开放接口-----模板消息 @see https://mp.weixin.qq.com/debug/wxadoc/dev/api/notice.html
 declare namespace wx {
-	interface ShareAppMessage extends BaseOptions {
-		/**
-		 * 分享标题	默认为当前小程序名称
-		 *
-		 * @type {string}
-		 * @memberOf ShareAppMessage
-		 */
-		title?: string;
-		/**
-		 * 分享路径	当默认为前页面 path ，
-		 * 必须是以 / 开头的完整路径
-		 *
-		 * @type {string}
-		 * @memberOf ShareAppMessage
-		 */
-		path?: string;
-	}
-	interface Page {
-		onShareAppMessage(): ShareAppMessage;
-	}
 
-	type ShareMenuOptions = BaseOptions;
+}
+// 开放接口-----客服消息 @see https://mp.weixin.qq.com/debug/wxadoc/dev/api/custommsg/receive.html
+declare namespace wx {
+}
+// 开放接口-----转发
+declare namespace wx {
+	interface ShareMenuOptions extends BaseOptions {
+		withShareTicket?: boolean;
+	}
 	/**
 	 * 显示分享按钮
 	 *
@@ -1936,76 +2251,57 @@ declare namespace wx {
 	 *
 	 * @param {ShareMenuOptions} [options]
 	 */
-	function hideShareMenu(options?: ShareMenuOptions): void;
+	function hideShareMenu(options?: BaseOptions): void;
+
+	/**
+	 * 更新转发属性
+	 */
+	function updateShareMenu(options?: ShareMenuOptions): void;
+
+	interface ShareInfoOptions extends BaseOptions {
+		shareTicket: string;
+		success?(res: {
+			errMsg: string;	// 错误信息
+			encryptedData: string;	// 包括敏感数据在内的完整转发信息的加密数据，详细见加密数据解密算法
+			iv: string;	// 加密算法的初始向量，详细见加密数据解密算法
+		}): void;
+	}
+	/**
+	 * 获取转发详细信息
+	 */
+	function getShareInfo(options?: ShareInfoOptions): void;
 }
 // 开放接口-----收货地址
 declare namespace wx {
 	interface ChooseAddressOptions extends BaseOptions {
 		success?(res: {
-			/**
-			 * 调用结果
-			 *
-			 * @type {string}
-			 */
-			errMsg: string;
-			/**
-			 * 收货人姓名
-			 *
-			 * @type {string}
-			 */
-			userName: string;
-			/**
-			 * 邮编
-			 *
-			 * @type {string}
-			 */
-			postalCode: string;
-			/**
-			 * 国标收货地址第一级地址
-			 *
-			 * @type {string}
-			 */
-			provinceName: string;
-			/**
-			 * 国标收货地址第二级地址
-			 *
-			 * @type {string}
-			 */
-			cityName: string;
-			/**
-			 * 国标收货地址第三级地址
-			 *
-			 * @type {string}
-			 */
-			countyName: string;
-			/**
-			 * 详细收货地址信息
-			 *
-			 * @type {string}
-			 */
-			detailInfo: string;
-			/**
-			 * 收货地址国家码
-			 *
-			 * @type {string}
-			 */
-			nationalCode: string;
-			/**
-			 * 收货人手机号码
-			 *
-			 * @type {string}
-			 */
-			telNumber: string;
+			errMsg: string;	// 调用结果
+			userName: string;	// 收货人姓名
+			postalCode: string;	// 邮编
+			provinceName: string;	// 国标收货地址第一级地址
+			cityName: string;	// 国标收货地址第二级地址
+			countyName: string;	// 国标收货地址第三级地址
+			detailInfo: string;	// 详细收货地址信息
+			nationalCode: string;	// 收货地址国家码
+			telNumber: string;	// 收货人手机号码
 		}): void;
 	}
 	function chooseAddress(options: ChooseAddressOptions): void;
 }
 // 开放接口-----卡券
 declare namespace wx {
+	interface CardExt {
+		code?: string	// 参与签名	用户领取的 code，仅自定义 code 模式的卡券须填写，非自定义 code 模式卡券不可填写，详情
+		openid?: string	// 参与签名	指定领取者的openid，只有该用户能领取。 bind_openid 字段为 true 的卡券必须填写，bind_openid 字段为 false 不可填写。
+		timestamp: number;	// 参与签名	时间戳，东八区时间,UTC+8，单位为秒
+		nonce_str?: string	// 参与签名	随机字符串，由开发者设置传入，加强安全性（若不填写可能被重放请求）。随机字符串，不长于 32 位。推荐使用大小写字母和数字，不同添加请求的 nonce_str 须动态生成，若重复将会导致领取失败。
+		fixed_begintimestamp?: number;	// 不参与签名	卡券在第三方系统的实际领取时间，为东八区时间戳（UTC+8,精确到秒）。当卡券的有效期类为 DATE_TYPE_FIX_TERM 时专用，标识卡券的实际生效时间，用于解决商户系统内起始时间和领取微信卡券时间不同步的问题。
+		outer_str?: string	// 不参与签名	领取渠道参数，用于标识本次领取的渠道值。
+		signature: string;	//	签名，商户将接口列表中的参数按照指定方式进行签名,签名方式使用 SHA1，具体签名方案参见：卡券签名
+	}
 	interface Card {
 		cardId: string;
 		cardExt: string;
-		code: string;
 	}
 	interface CardOptions extends BaseOptions {
 		cardList: Card[];
@@ -2017,7 +2313,10 @@ declare namespace wx {
 	 */
 	function addCard(options: ChooseAddressOptions): void;
 	interface OpenCardOptions extends BaseOptions {
-		cardList: Card[];
+		cardList: {
+			cardId: string;
+			code: string;
+		}[];
 	}
 	/**
 	 * 查看微信卡包中的卡券。
@@ -2029,32 +2328,146 @@ declare namespace wx {
 // 开放接口-----设置
 declare namespace wx {
 	interface AuthSetting {
+		// [key: Scope]: boolean;
 		'scope.userInfo': boolean;
 		'scope.userLocation': boolean;
 		'scope.address': boolean;
+		'scope.invoiceTitle': boolean;
+		'scope.werun': boolean;
 		'scope.record': boolean;
+		'scope.writePhotosAlbum': boolean;
 	}
-	interface OpenSettingOptions extends BaseOptions {
+	interface SettingOptions extends BaseOptions {
 		success?(res: {
 			authSetting: AuthSetting
 		}): void;
 	}
-	function openSetting(options: OpenSettingOptions): void;
+	/**
+	 * 调起客户端小程序设置界面，返回用户设置的操作结果。
+	 */
+	function openSetting(options: SettingOptions): void;
+	/**
+	 * 获取用户的当前设置。
+	 */
+	function getSetting(options: SettingOptions): void;
+}
+// 开放接口-----微信运动
+declare namespace wx {
+	interface EncryptedData {
+		stepInfoList: {
+			timestamp: number;	// 时间戳，表示数据对应的时间
+			step: number;	// 微信运动步数
+		}[];
+	}
+	interface GetWeRunDataOption extends BaseOptions {
+		success?(res: {
+			errMsg: string;	// 调用结果
+			encryptedData: string;	// 包括敏感数据在内的完整用户信息的加密数据，详细见加密数据解密算法
+			iv: string;	// 加密算法的初始向量，详细见加密数据解密算法
+		}): void;
+	}
+	/**
+	 * 获取用户过去三十天微信运动步数，需要先调用 wx.login 接口。
+	 */
+	function getWeRunData(options: GetWeRunDataOption): void;
+}
+// 开放接口-----打开小程序
+declare namespace wx {
+	interface NavigateToMiniProgramOptions extends BaseOptions {
+		appId: string; // 要打开的小程序 appId
+		path?: string;	// 打开的页面路径，如果为空则打开首页
+		extraData?: any; // 包括 encrypt_card_id, outer_str, biz三个字段，须从 step3 中获得的链接中获取参数
+		envVersion?: string;	// 要打开的小程序版本，有效值 develop（开发版），trial（体验版），release（正式版） ，仅在当前小程序为开发版或体验版时此参数有效；如果当前小程序是体验版或正式版，则打开的小程序必定是正式版。默认值 release
+		success?(res: {
+			errMsg: string;
+		}): void;
+	}
+
+	/**
+	 * 打开同一公众号下关联的另一个小程序。
+	 */
+	function navigateToMiniProgram(options: NavigateToMiniProgramOptions): void;
+
+	interface NavigateBackMiniProgramOptions extends BaseOptions {
+		extraData?: any;	// 需要返回给上一个小程序的数据，上一个小程序可在 App.onShow() 中获取到这份数据。详情
+		success?(res: {
+			errMsg: string;
+		}): void;
+	}
+	/**
+	 * 返回到上一个小程序，只有在当前小程序是被其他小程序打开时可以调用成功
+	 */
+	function navigateBackMiniProgram(options: NavigateBackMiniProgramOptions): void;
+}
+// 开放接口-----获取发票抬头
+declare namespace wx {
+	interface ChooseInvoiceTitleOptions extends BaseOptions {
+		success?(res: {
+			type: string;	// 抬头类型（0：单位，1：个人）
+			title: string;	// 抬头名称
+			taxNumber: string;	// 抬头税号
+			companyAddress: string;	// 单位地址
+			telephone: string;	// 手机号码
+			bankName: string;	// 银行名称
+			bankAccount: string;	// 银行账号
+			errMsg: string;	// 接口调用结果
+		}): void;
+	}
+	/**
+	 * 选择用户的发票抬头。
+	 */
+	function chooseInvoiceTitle(options: ChooseInvoiceTitleOptions): void;
+}
+// 开放接口-----生物认证
+declare namespace wx {
+	type AuthModes = 'fingerPrint' | 'facial' | 'speech';
+	interface CheckIsSupportSoterAuthenticationOptions extends BaseOptions {
+		success?(res: {
+			supportMode: AuthModes[];	// 该设备支持的可被SOTER识别的生物识别方式
+			errMsg: string;	// 接口调用结果
+		}): void;
+	}
+	/**
+	 * 获取本机支持的 SOTER 生物认证方式
+	 */
+	function checkIsSupportSoterAuthentication(options: CheckIsSupportSoterAuthenticationOptions): void;
+	interface StartSoterAuthenticationOptions extends BaseOptions {
+		requestAuthModes: AuthModes[];	// 请求使用的可接受的生物认证方式
+		challenge: string;		// 挑战因子。挑战因子为调用者为此次生物鉴权准备的用于签名的字符串关键是别信息，将作为result_json的一部分，供调用者识别本次请求。例如：如果场景为请求用户对某订单进行授权确认，则可以将订单号填入此参数。
+		authContent?: string;	// 验证描述，即识别过程中显示在界面上的对话框提示内容
+		success?(res: {
+			errCode: number;	// 错误码
+			authMode: string;	// 生物认证方式
+			resultJSON: string;	// 在设备安全区域（TEE）内获得的本机安全信息（如TEE名称版本号等以及防重放参数）以及本次认证信息（仅Android支持，本次认证的指纹ID）（仅Android支持，本次认证的指纹ID）
+			resultJSONSignature: string;	// 用SOTER安全密钥对result_json的签名(SHA256withRSA / PSS, saltlen = 20)
+			errMsg: string;	// 接口调用结果
+		}): void;
+	}
+	/**
+	 * 开始 SOTER 生物认证
+	 */
+	function startSoterAuthentication(options: StartSoterAuthenticationOptions): void;
+
+	interface CheckIsSoterEnrolledInDeviceOptions extends BaseOptions {
+		checkAuthMode: AuthModes;	// 认证方式
+		success?(res: {
+			isEnrolled: boolean;	// 是否已录入信息
+			errMsg: string;	// 接口调用结果
+		}): void;
+	}
+	/**
+	 * 获取设备内是否录入如指纹等生物信息的接口
+	 */
+	function checkIsSoterEnrolledInDevice(options: CheckIsSoterEnrolledInDeviceOptions): void;
 }
 // 拓展接口
 declare namespace wx {
 	/**
 	 * 将 ArrayBuffer 数据转成 Base64 字符串
-	 *
-	 * @param {ArrayBuffer} arrayBuffer
-	 * @returns {string}
 	 */
 	function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string;
 	/**
 	 * 将 Base64 字符串转成 ArrayBuffer 数据
-	 *
-	 * @param {string} base64
-	 * @returns {ArrayBuffer}
 	 */
 	function base64ToArrayBuffer(base64: string): ArrayBuffer;
 }
@@ -2063,6 +2476,17 @@ declare namespace wx {
 	 * 收起键盘。
 	 */
 	function hideKeyboard(): void;
+}
+
+// 调试接口
+declare namespace wx {
+	interface SetEnableDebugOptions extends BaseOptions {
+		enableDebug: boolean;	// 是否打开调试
+		success?(res: {
+			errMsg: string;
+		}): void;
+	}
+	function setEnableDebug(options: SetEnableDebugOptions): void;
 }
 
 // Page
