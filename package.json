@@ -1,6 +1,6 @@
 {
 	"name": "tencent-wx-app",
-	"version": "1.0.0-dev.201711221847",
+	"version": "1.1.201711241858",
 	"description": "微信小程序",
 	"types": "index.d.ts",
 	"repository": {
