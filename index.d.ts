@@ -28,7 +28,7 @@ declare namespace wx {
 				encryptedData: string;
 			}
 		}): void;
-		onShareAppMessage(options: {
+		onShareAppMessage?(options: {
 			from: 'button' | 'menu';	// 转发事件来源。button：页面内转发按钮；menu：右上角转发菜单
 			target?: any;	// 如果 from 值是 button，则 target 是触发这次转发事件的 button，否则为 undefined
 		}): {
