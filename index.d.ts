@@ -70,6 +70,7 @@ declare namespace wx {
 		complete?(res: any): void;
 	}
 }
+
 // 发起请求
 declare namespace wx {
 	interface RequestHeader {
@@ -93,6 +94,7 @@ declare namespace wx {
 	 */
 	function request(options: RequestOptions): void;
 }
+
 // 上传下载
 declare namespace wx {
 	interface UploadFileResponse {
@@ -151,6 +153,7 @@ declare namespace wx {
 	 */
 	function downloadFile(options: DownloadFileOptions): void;
 }
+
 // WebSocket
 declare namespace wx {
 	interface ConnectSocketOptions extends BaseOptions {
@@ -206,6 +209,7 @@ declare namespace wx {
 	/** 监听WebSocket关闭。 */
 	function onSocketClose(callback: () => void): void;
 }
+
 // 媒体-----图片
 declare namespace wx {
 	type ImageSizeType = 'original' | 'compressed';
@@ -261,7 +265,7 @@ declare namespace wx {
 	 */
 	function getImageInfo(options: GetImageInfoOptions): void;
 
-	interface SaveImageToPhotosAlbumOption {
+	interface SaveImageToPhotosAlbumOption extends BaseOptions {
 		filePath: string;	// 图片文件路径，可以是临时文件路径也可以是永久文件路径，不支持网络图片路径
 		success?(errMsg: string): void;	// 接口调用成功的回调函数
 	}
@@ -269,6 +273,7 @@ declare namespace wx {
 	/** 保存图片到系统相册。需要用户授权 scope.writePhotosAlbum */
 	function saveImageToPhotosAlbum(options?: SaveImageToPhotosAlbumOption): void;
 }
+
 // 媒体-----录音管理
 declare namespace wx {
 	interface RecordManager {
@@ -300,6 +305,7 @@ declare namespace wx {
 	/** 获取全局唯一的录音管理器 recorderManager。 */
 	function getRecorderManager(): RecordManager;
 }
+
 // 媒体-----背景音乐播放管理
 declare namespace wx {
 	interface BackgroundAudioManager {
@@ -337,6 +343,7 @@ declare namespace wx {
 	/** 获取全局唯一的背景音频管理器 backgroundAudioManager。 */
 	function getBackgroundAudioManager(): BackgroundAudioManager;
 }
+
 // 媒体-----音频组件控制
 declare namespace wx {
 	interface InnerAudioContext {
@@ -373,6 +380,7 @@ declare namespace wx {
 	}
 	function createInnerAudioContext(): InnerAudioContext;
 }
+
 // 媒体-----视频
 declare namespace wx {
 	interface VideoData {
@@ -412,6 +420,7 @@ declare namespace wx {
 	/** 保存视频到系统相册。需要用户授权 scope.writePhotosAlbum */
 	function saveVideoToPhotosAlbum(options: SaveVideoOptions): void;
 }
+
 // 媒体-----视频组件控制
 declare namespace wx {
 	interface VideoContext {
@@ -446,6 +455,7 @@ declare namespace wx {
 	 */
 	function createVideoContext(videoId: string, _this?: any): VideoContext;
 }
+
 // 媒体-----相机组件控制
 declare namespace wx {
 	interface CameraContext {
@@ -465,6 +475,7 @@ declare namespace wx {
 	 */
 	function createCameraContext(_this?: any): CameraContext;
 }
+
 // 文件
 declare namespace wx {
 	interface SavedFileData {
@@ -558,6 +569,7 @@ declare namespace wx {
 	 */
 	function openDocument(options: OpenDocumentOptions): void;
 }
+
 // 数据缓存
 declare namespace wx {
 	interface SetStorageOptions extends BaseOptions {
@@ -637,6 +649,7 @@ declare namespace wx {
 	 */
 	function clearStorageSync(): void;
 }
+
 // 位置-----获取位置
 declare namespace wx {
 	interface LocationData {
@@ -690,6 +703,7 @@ declare namespace wx {
 	 */
 	function chooseLocation(options: ChooseLocationOptions): void;
 }
+
 // 位置-----查看位置
 declare namespace wx {
 	interface OpenLocationOptions extends BaseOptions {
@@ -709,6 +723,7 @@ declare namespace wx {
 	 */
 	function openLocation(options: OpenLocationOptions): void;
 }
+
 // 位置-----地图组件控制
 declare namespace wx {
 	interface Position {
@@ -767,6 +782,7 @@ declare namespace wx {
 	 */
 	function createMapContext(mapId: string, _this?: any): MapContext;
 }
+
 // 设备-----系统信息
 declare namespace wx {
 	interface SystemInfo {
@@ -813,6 +829,7 @@ declare namespace wx {
 	 */
 	function canIUse(w: string): boolean;
 }
+
 // 设备-----网络状态
 declare namespace wx {
 	type networkType = '2g' | '3g' | '4g' | 'wifi' | 'unknown' | 'none';
@@ -839,6 +856,7 @@ declare namespace wx {
 		networkType: networkType;
 	}) => void): void;
 }
+
 // 设备-----加速度计
 declare namespace wx {
 	interface AccelerometerData {
@@ -869,6 +887,7 @@ declare namespace wx {
 	 */
 	function stopAccelerometer(options: AccelerometerOptions): void;
 }
+
 // 设备-----罗盘
 declare namespace wx {
 	interface CompassData {
@@ -889,6 +908,7 @@ declare namespace wx {
 	function startCompass(options: CompassOptions): void;
 	function stopCompass(options: CompassOptions): void;
 }
+
 // 设备-----拨打电话
 declare namespace wx {
 	interface MakePhoneCallOptions extends BaseOptions {
@@ -902,6 +922,7 @@ declare namespace wx {
 	 */
 	function makePhoneCall(options: MakePhoneCallOptions): void;
 }
+
 // 设备-----扫码
 declare namespace wx {
 	type scanType = "qrCode" | "barCode";
@@ -932,6 +953,7 @@ declare namespace wx {
 	 */
 	function scanCode(options: ScanCodeOptions): void;
 }
+
 // 设备-----剪贴板
 declare namespace wx {
 	interface SetClipboardDataOptions extends BaseOptions {
@@ -953,6 +975,7 @@ declare namespace wx {
 	 */
 	function getClipboardData(options: GetClipboardDataOptions): void;
 }
+
 // 设备-----蓝牙
 declare namespace wx {
 	interface OpenBluetoothAdapterOptions extends BaseOptions {
@@ -1237,6 +1260,7 @@ declare namespace wx {
 		}
 	) => void): void;
 }
+
 // 设备-----iBeacon
 declare namespace wx {
 	interface StartBeaconOptions extends BaseOptions {
@@ -1276,6 +1300,7 @@ declare namespace wx {
 	function onBeaconUpdate(callback: (beacons: Beacon[]) => void): void;
 	function onBeaconServiceChange(callback: (available: boolean, discovering: boolean) => void): void;
 }
+
 // 设备-----屏幕亮度
 declare namespace wx {
 	interface SetScreenBrightnessOptions extends BaseOptions {
@@ -1306,10 +1331,12 @@ declare namespace wx {
 	}
 	function setKeepScreenOn(options: SetKeepScreenOnOptions): void;
 }
+
 // 设备-----用户截屏事件
 declare namespace wx {
 	function onUserCaptureScreen(callback: () => void): void;
 }
+
 // 设备-----振动
 declare namespace wx {
 	/**
@@ -1322,6 +1349,7 @@ declare namespace wx {
 	 */
 	function vibrateShort(options: BaseOptions): void;
 }
+
 // 设备-----手机联系人
 declare namespace wx {
 	interface PhoneContact extends BaseOptions {
@@ -1360,6 +1388,7 @@ declare namespace wx {
 	}
 	function addPhoneContact(options: PhoneContact): void;
 }
+
 // 界面-----交互反馈
 declare namespace wx {
 	interface ToastOptions extends BaseOptions {
@@ -1478,6 +1507,7 @@ declare namespace wx {
 	 */
 	function showActionSheet(options: ActionSheetOptions): void;
 }
+
 // 界面-----设置导航条
 declare namespace wx {
 	interface SetNavigationBarTitleOptions extends BaseOptions {
@@ -1498,6 +1528,7 @@ declare namespace wx {
 	 */
 	function hideNavigationBarLoading(): void;
 }
+
 // 界面-----导航
 declare namespace wx {
 	interface NavigateToOptions extends BaseOptions {
@@ -1547,6 +1578,7 @@ declare namespace wx {
 	 */
 	function reLaunch(options?: RelaunchOptions): void;
 }
+
 // 界面-----动画
 declare namespace wx {
 	type TimingFunction = 'linear' | 'ease' | 'ease-in' | 'ease-in-out' | 'ease-out' | 'step-start' | 'step-end';
@@ -1695,6 +1727,7 @@ declare namespace wx {
 		): Animation;
 	}
 }
+
 // 界面-----位置
 declare namespace wx {
 	function pageScrollTo(options: {
@@ -2023,6 +2056,7 @@ declare namespace wx {
 	 */
 	function canvasToTempFilePath(options: CanvasToTempFilePathOptions): void;
 }
+
 // 界面-----下拉刷新
 declare namespace wx {
 	interface Page {
@@ -2042,6 +2076,7 @@ declare namespace wx {
 	 */
 	function stopPullDownRefresh(): void;
 }
+
 // WXML节点信息
 declare namespace wx {
 	interface Rect {
@@ -2094,6 +2129,7 @@ declare namespace wx {
 	 */
 	function createSelectorQuery(): SelectorQuery;
 }
+
 // 第三方平台
 declare namespace wx {
 	interface GetExtConfigOption extends BaseOptions {
@@ -2112,6 +2148,7 @@ declare namespace wx {
 	 */
 	function getExtConfigSync(options: GetExtConfigOption): any;
 }
+
 // 开放接口-----登陆
 // [签名加密](https://mp.weixin.qq.com/debug/wxadoc/dev/api/signature.html)
 declare namespace wx {
@@ -2155,6 +2192,7 @@ declare namespace wx {
 	 */
 	function checkSession(options: CheckSessionOption): void;
 }
+
 // 开放接口-----授权
 declare namespace wx {
 	type Scope = 'scope.userInfo' | 'scope.userLocation' | 'scope.address' | 'scope.invoiceTitle' | 'scope.werun' | 'scope.record' | 'scope.writePhotosAlbum';
@@ -2169,6 +2207,7 @@ declare namespace wx {
 	 */
 	function authorize(options: AuthorizeOptions): void;
 }
+
 // 开放接口-----用户信息
 declare namespace wx {
 	interface UserInfo {
@@ -2208,6 +2247,7 @@ declare namespace wx {
 	 * @see https://mp.weixin.qq.com/debug/wxadoc/dev/api/getPhoneNumber.html
 	 */
 }
+
 // 开放接口-----微信支付
 declare namespace wx {
 	type PaymentSignType = 'MD5';
@@ -2228,13 +2268,16 @@ declare namespace wx {
 	 */
 	function requestPayment(options: RequestPaymentOptions): void;
 }
+
 // 开放接口-----模板消息 @see https://mp.weixin.qq.com/debug/wxadoc/dev/api/notice.html
 declare namespace wx {
 
 }
+
 // 开放接口-----客服消息 @see https://mp.weixin.qq.com/debug/wxadoc/dev/api/custommsg/receive.html
 declare namespace wx {
 }
+
 // 开放接口-----转发
 declare namespace wx {
 	interface ShareMenuOptions extends BaseOptions {
@@ -2271,6 +2314,7 @@ declare namespace wx {
 	 */
 	function getShareInfo(options?: ShareInfoOptions): void;
 }
+
 // 开放接口-----收货地址
 declare namespace wx {
 	interface ChooseAddressOptions extends BaseOptions {
@@ -2288,6 +2332,7 @@ declare namespace wx {
 	}
 	function chooseAddress(options: ChooseAddressOptions): void;
 }
+
 // 开放接口-----卡券
 declare namespace wx {
 	interface CardExt {
@@ -2325,6 +2370,7 @@ declare namespace wx {
 	 */
 	function openCard(options: OpenCardOptions): void;
 }
+
 // 开放接口-----设置
 declare namespace wx {
 	interface AuthSetting {
@@ -2351,6 +2397,7 @@ declare namespace wx {
 	 */
 	function getSetting(options: SettingOptions): void;
 }
+
 // 开放接口-----微信运动
 declare namespace wx {
 	interface EncryptedData {
@@ -2371,6 +2418,7 @@ declare namespace wx {
 	 */
 	function getWeRunData(options: GetWeRunDataOption): void;
 }
+
 // 开放接口-----打开小程序
 declare namespace wx {
 	interface NavigateToMiniProgramOptions extends BaseOptions {
@@ -2399,6 +2447,7 @@ declare namespace wx {
 	 */
 	function navigateBackMiniProgram(options: NavigateBackMiniProgramOptions): void;
 }
+
 // 开放接口-----获取发票抬头
 declare namespace wx {
 	interface ChooseInvoiceTitleOptions extends BaseOptions {
@@ -2418,6 +2467,7 @@ declare namespace wx {
 	 */
 	function chooseInvoiceTitle(options: ChooseInvoiceTitleOptions): void;
 }
+
 // 开放接口-----生物认证
 declare namespace wx {
 	type AuthModes = 'fingerPrint' | 'facial' | 'speech';
@@ -2460,6 +2510,7 @@ declare namespace wx {
 	 */
 	function checkIsSoterEnrolledInDevice(options: CheckIsSoterEnrolledInDeviceOptions): void;
 }
+
 // 拓展接口
 declare namespace wx {
 	/**
@@ -2471,6 +2522,7 @@ declare namespace wx {
 	 */
 	function base64ToArrayBuffer(base64: string): ArrayBuffer;
 }
+
 declare namespace wx {
 	/**
 	 * 收起键盘。
@@ -2509,6 +2561,7 @@ declare namespace wx {
 	type PageConstructor = (options: wx.PageOptions) => void;
 }
 declare var Page: wx.PageConstructor;
+
 // App
 declare namespace wx {
 	interface App {
@@ -2583,7 +2636,3 @@ declare var App: wx.AppConstructor;
 declare function getApp(): wx.App;
 
 declare function getCurrentPages(): wx.Page[];
-
-// declare module 'tencent-wx-app' {
-// 	export = wx;
-// }
