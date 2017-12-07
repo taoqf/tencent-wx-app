@@ -403,7 +403,7 @@ declare namespace wx {
 		/** 拍摄视频最长拍摄时间，单位秒。最长支持60秒 */
 		maxDuration?: number;
 		/** 前置或者后置摄像头，默认为前后都有，即：['front', 'back'] */
-		camera?: CameraDevice[];
+		camera?: CameraDevice;
 		/** 接口调用成功，返回视频文件的临时文件路径，详见返回参数说明 */
 		success?(res: VideoData): void;
 	}
@@ -552,7 +552,9 @@ declare namespace wx {
 	 */
 	function getSavedFileInfo(options: GetSavedFileInfoOptions): void;
 
-	type RemoveSavedFileOptions = BaseOptions;
+	interface RemoveSavedFileOptions extends BaseOptions {
+		filePath: string;	// 需要删除的文件路径
+	}
 	/**
 	 * 删除本地存储的文件
 	 */
@@ -568,6 +570,18 @@ declare namespace wx {
 	 * 新开页面打开文档，支持格式：doc, xls, ppt, pdf, docx, xlsx, pptx
 	 */
 	function openDocument(options: OpenDocumentOptions): void;
+
+	interface GetFileInfoOptions extends BaseOptions {
+		filePath: string;	// 本地文件路径
+		digestAlgorithm?: 'md5' | 'sha1';	// 计算文件摘要的算法，默认值 md5，有效值：md5，sha1
+		success?(res: {
+			size: number;	// 文件大小，单位：B
+			digest: string;	// 按照传入的 digestAlgorithm 计算得出的的文件摘要
+			errMsg: string;	// 调用结果
+		}): void;	//接口调用成功的回调函数
+	}
+
+	function getFileInfo(options: GetFileInfoOptions): void;
 }
 
 // 数据缓存
@@ -669,6 +683,7 @@ declare namespace wx {
 	interface GetLocationOptions extends BaseOptions {
 		/** 默认为 wgs84 返回 gps 坐标，gcj02 返回可用于wx.openLocation的坐标 */
 		type?: 'wgs84' | 'gcj02';
+		altitude?: boolean;	// 传入 true 会返回高度信息，由于获取高度需要较高精确度，会减慢接口返回速度
 		/** 接口调用成功的回调函数，返回内容详见返回参数说明。 */
 		success(res: LocationData): void;
 	}
@@ -1020,6 +1035,8 @@ declare namespace wx {
 	 */
 	function onBluetoothAdapterStateChange(callback: (res: BluetoothAdapterState) => void): void;
 	interface StartBluetoothDevicesDiscoveryOptions extends BaseOptions {
+		allowDuplicatesKey?: boolean;	// 是否允许重复上报同一设备， 如果允许重复上报，则onDeviceFound 方法会多次上报同一设备，但是 RSSI 值会有不同
+		interval?: number;	// 上报设备的间隔，默认为0，意思是找到新设备立即上报，否则根据传入的间隔上报
 		success(res: ErrMsgResponse): void;
 		/**
 		 * 蓝牙设备主 service 的 uuid 列表
@@ -1067,6 +1084,8 @@ declare namespace wx {
 		 * 当前蓝牙设备的广播内容
 		 */
 		advertisData: ArrayBuffer;
+		advertisServiceUUIDs: string[];	// 当前蓝牙设备的广播数据段中的ServiceUUIDs数据段
+		localName: string;	//	当前蓝牙设备的广播数据段中的LocalName数据段
 	}
 	interface GetBluetoothDevicesOptions extends BaseOptions {
 		success(res: {
@@ -1096,6 +1115,7 @@ declare namespace wx {
 	function getConnectedBluetoothDevices(options: GetConnectedBluetoothDevicesOptions): void;
 
 	interface CreateBLEConnectionOptions extends BaseOptions {
+		deviceId: string;	// 蓝牙设备 id，参考 getDevices 接口
 		success(res: ErrMsgResponse): void;
 	}
 	/**
@@ -1189,6 +1209,7 @@ declare namespace wx {
 		 * 蓝牙特征值的 uuid
 		 */
 		characteristicId: string;
+		value: ArrayBuffer;	// 蓝牙设备特征值对应的二进制值
 		success(res: {
 			characteristic: {
 				/**
