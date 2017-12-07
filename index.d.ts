@@ -1209,45 +1209,58 @@ declare namespace wx {
 		 * 蓝牙特征值的 uuid
 		 */
 		characteristicId: string;
-		value: ArrayBuffer;	// 蓝牙设备特征值对应的二进制值
+	}
+
+	interface Characteristic {
+		/**
+		 * 蓝牙设备特征值的 uuid
+		 */
+		characteristicId: string;
+		/**
+		 * 蓝牙设备特征值对应服务的 uuid
+		 */
+		serviceId: string;
+		/**
+		 * 蓝牙设备特征值对应的二进制值
+		 */
+		value: ArrayBuffer;
+	}
+	interface ReadBLECharacteristicValueOptions extends BLECharacteristicValueOptions {
 		success(res: {
-			characteristic: {
-				/**
-				 * 蓝牙设备特征值的 uuid
-				 */
-				characteristicId: string;
-				/**
-				 * 蓝牙设备特征值对应服务的 uuid
-				 */
-				serviceId: string;
-				/**
-				 * 蓝牙设备特征值对应的二进制值
-				 */
-				value: ArrayBuffer;
-			};
+			characteristic: Characteristic;
 		} & ErrMsgResponse): void;
 	}
 	/**
 	 * 读取低功耗蓝牙设备的特征值的二进制数据值。
 	 * 注意：必须设备的特征值支持read才可以成功调用，具体参照 characteristic 的 properties 属性
 	 */
-	function readBLECharacteristicValue(options: BLECharacteristicValueOptions): void;
+	function readBLECharacteristicValue(options: ReadBLECharacteristicValueOptions): void;
+
+	interface WriteBLECharacteristicValueOptions extends BLECharacteristicValueOptions {
+		value: ArrayBuffer;	// 蓝牙设备特征值对应的二进制值
+		success(res: ErrMsgResponse): void;
+	}
 	/**
 	 * 向低功耗蓝牙设备特征值中写入二进制数据。
 	 * 注意：必须设备的特征值支持write才可以成功调用，具体参照 characteristic 的 properties 属性
 	 * tips: 并行调用多次读写接口存在读写失败的可能性
 	 */
-	function writeBLECharacteristicValue(options: BLECharacteristicValueOptions): void;
+	function writeBLECharacteristicValue(options: WriteBLECharacteristicValueOptions): void;
+
+	interface NotifyBLECharacteristicValueChangeOptions extends BLECharacteristicValueOptions {
+		state: boolean;	// true: 启用 notify; false: 停用 notify
+		success(ret: ErrMsgResponse): void;	// 成功则返回本机蓝牙适配器状态
+	}
 	/**
 	 * 启用低功耗蓝牙设备特征值变化时的 notify 功能。
 	 * 注意：必须设备的特征值支持notify才可以成功调用，具体参照 characteristic 的 properties 属性
 	 * 另外，必须先启用notify才能监听到设备 characteristicValueChange 事件
 	 */
-	function notifyBLECharacteristicValueChanged(options: BLECharacteristicValueOptions): void;
+	function notifyBLECharacteristicValueChange(options: NotifyBLECharacteristicValueChangeOptions): void;
 	/**
 	 * 监听低功耗蓝牙连接的错误事件，包括设备丢失，连接异常断开等等。
 	 */
-	function onBLEConnectionStateChanged(callback: (res: {
+	function onBLEConnectionStateChange(callback: (res: {
 		/**
 		 * 蓝牙设备 id，参考 device 对象
 		 */
@@ -1319,7 +1332,10 @@ declare namespace wx {
 	function getBeacons(options: GetBeaconOptions): void;
 
 	function onBeaconUpdate(callback: (beacons: Beacon[]) => void): void;
-	function onBeaconServiceChange(callback: (available: boolean, discovering: boolean) => void): void;
+	function onBeaconServiceChange(callback: (res: {
+		available: boolean;
+		discovering: boolean;
+	}) => void): void;
 }
 
 // 设备-----屏幕亮度
@@ -2399,10 +2415,8 @@ declare namespace wx {
 	}
 	/**
 	 * 批量添加卡券。
-	 *
-	 * @param {ChooseAddressOptions} options
 	 */
-	function addCard(options: ChooseAddressOptions): void;
+	function addCard(options: CardOptions): void;
 	interface OpenCardOptions extends BaseOptions {
 		cardList: {
 			cardId: string;
