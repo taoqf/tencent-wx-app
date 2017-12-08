@@ -8,6 +8,15 @@ declare namespace wx {
 		errMsg: 'ok' | string;
 	}
 
+	interface ShareMessage extends BaseOptions {
+		title?: string;	// 转发标题	当前小程序名称
+		path?: string;	// 转发路径	当前页面 path ，必须是以 / 开头的完整路径
+		imageUrl?: string;	// 自定义图片路径，可以是本地文件路径、代码包文件路径或者网络图片路径，支持PNG及JPG，不传入 imageUrl 则使用默认截图。iOS 显示图片长宽比是 5:4，Android 显示图片长宽比是 215:168。高度超出部分会从底部裁剪。推荐使用 Android 图片长宽比，可保证图片在两个平台都完整显示，其中 iOS 底部会出现一小段白色		1.5.0
+		success?(res: {
+			shareTickets: string[];
+		}): void;
+	}
+
 	interface PageOptions {
 		/** 页面的初始数据 */
 		data?: any;
@@ -31,14 +40,7 @@ declare namespace wx {
 		onShareAppMessage?(options: {
 			from: 'button' | 'menu';	// 转发事件来源。button：页面内转发按钮；menu：右上角转发菜单
 			target?: any;	// 如果 from 值是 button，则 target 是触发这次转发事件的 button，否则为 undefined
-		}): {
-			title?: string;	// 转发标题	当前小程序名称
-			path?: string;	// 转发路径	当前页面 path ，必须是以 / 开头的完整路径
-			imageUrl?: string;	// 自定义图片路径，可以是本地文件路径、代码包文件路径或者网络图片路径，支持PNG及JPG，不传入 imageUrl 则使用默认截图。iOS 显示图片长宽比是 5:4，Android 显示图片长宽比是 215:168。高度超出部分会从底部裁剪。推荐使用 Android 图片长宽比，可保证图片在两个平台都完整显示，其中 iOS 底部会出现一小段白色		1.5.0
-			success?(res: {
-				shareTickets: string[];
-			}): void;
-		} & BaseOptions;
+		}): ShareMessage;
 		[key: string]: any;
 	}
 
@@ -458,17 +460,22 @@ declare namespace wx {
 
 // 媒体-----相机组件控制
 declare namespace wx {
+	interface TakePhotoOptions extends BaseOptions {
+		quality?: 'high' | 'normal' | 'low';	// 成像质量，值为high, normal, low，默认normal
+		success?(res: { tempImagePath: string; }): void;
+	}
+
+	interface StartRecordOptions extends BaseOptions {
+		timeoutCallback?(res: { tempThumbPath: string; tempVideoPath: string; }): void;	// 超过30s或页面onHide时会结束录像，res = { tempThumbPath, tempVideoPath }
+	}
+
+	interface StopRecordOptions extends BaseOptions {
+		success?(res: { tempThumbPath: string; tempVideoPath: string; }): void;
+	}
 	interface CameraContext {
-		takePhoto: {
-			quality?: 'high' | 'normal' | 'low';	// 成像质量，值为high, normal, low，默认normal
-			success?(res: { tempImagePath: string; }): void;
-		} & BaseOptions;	// 拍照，可指定质量，成功则返回图片
-		startRecord: {
-			timeoutCallback?(res: { tempThumbPath: string; tempVideoPath: string; }): void;	// 超过30s或页面onHide时会结束录像，res = { tempThumbPath, tempVideoPath }
-		} & BaseOptions;	// 开始录像
-		stopRecord: {
-			success?(res: { tempThumbPath: string; tempVideoPath: string; }): void;
-		} & BaseOptions;	// 结束录像，成功则返回封面与视频
+		takePhoto(options: TakePhotoOptions): void;	// 拍照，可指定质量，成功则返回图片
+		startRecord(options: StartRecordOptions): void;	// 开始录像
+		stopRecord(options: StopRecordOptions): void;	// 结束录像，成功则返回封面与视频
 	}
 	/**
 	 * 创建并返回 camera 上下文 cameraContext 对象，cameraContext 与页面的 camera 组件绑定，一个页面只能有一个camera，通过它可以操作对应的 <camera/> 组件。 在自定义组件下，第一个参数传入组件实例this，以操作组件内 <camera/> 组件
@@ -1087,10 +1094,13 @@ declare namespace wx {
 		advertisServiceUUIDs: string[];	// 当前蓝牙设备的广播数据段中的ServiceUUIDs数据段
 		localName: string;	//	当前蓝牙设备的广播数据段中的LocalName数据段
 	}
+
+	interface GetBluetoothDevicesResponse extends ErrMsgResponse {
+		devices: BluetoothDevice[];
+	}
+
 	interface GetBluetoothDevicesOptions extends BaseOptions {
-		success(res: {
-			devices: BluetoothDevice[];
-		} & ErrMsgResponse): void;
+		success(res: GetBluetoothDevicesResponse): void;
 	}
 	/**
 	 * 获取所有已发现的蓝牙设备，包括已经和本机处于连接状态的设备
@@ -1100,14 +1110,16 @@ declare namespace wx {
 	 * 监听寻找到新设备的事件
 	 */
 	function onBluetoothDeviceFound(callback: (res: {
-		devices: BluetoothDevice[]
+		devices: BluetoothDevice[];
 	}) => void): void;
+
+	interface GetConnectedBluetoothDevicesResponse extends ErrMsgResponse {
+		devices: BluetoothDevice[];
+	}
 
 	interface GetConnectedBluetoothDevicesOptions extends BaseOptions {
 		services: string[];
-		success(res: {
-			devices: BluetoothDevice[]
-		} & ErrMsgResponse): void;
+		success(res: GetConnectedBluetoothDevicesResponse): void;
 	}
 	/**
 	 * 根据 uuid 获取处于已连接状态的设备
@@ -1135,6 +1147,13 @@ declare namespace wx {
 	 */
 	function closeBLEConnection(options: CloseBLEConnectionOptions): void;
 
+	interface GetBLEDeviceServicesResponse extends ErrMsgResponse {
+		services: Array<{
+			uuid: string;
+			isPrimary: boolean;
+		}>;
+	}
+
 	interface GetBLEDeviceServicesOptions extends BaseOptions {
 		/**
 		 * 蓝牙设备 id，参考 getDevices 接口
@@ -1143,17 +1162,36 @@ declare namespace wx {
 		/**
 		 * 成功则返回本机蓝牙适配器状态
 		 */
-		success(res: {
-			services: Array<{
-				uuid: string;
-				isPrimary: boolean;
-			}>;
-		} & ErrMsgResponse): void;
+		success(res: GetBLEDeviceServicesResponse): void;
 	}
 	/**
 	 * 获取蓝牙设备所有 service（服务）
 	 */
 	function getBLEDeviceServices(options: GetBLEDeviceServicesOptions): void;
+
+	interface GetBLEDeviceCharacteristicsReponse extends ErrMsgResponse {
+		characteristics: Array<{
+			uuid: string;
+			properties: Array<{
+				/**
+				 * 该特征值是否支持 read 操作
+				 */
+				read: boolean;
+				/**
+				 * 该特征值是否支持 write 操作
+				 */
+				write: boolean;
+				/**
+				 * 该特征值是否支持 notify 操作
+				 */
+				notify: boolean;
+				/**
+				 * 该特征值是否支持 indicate 操作
+				 */
+				indicate: boolean;
+			}>;
+		}>;
+	}
 
 	interface GetBLEDeviceCharacteristicsOptions extends BaseOptions {
 		/**
@@ -1167,29 +1205,7 @@ declare namespace wx {
 		/**
 		 * 成功则返回本机蓝牙适配器状态
 		 */
-		success(res: {
-			characteristics: Array<{
-				uuid: string;
-				properties: Array<{
-					/**
-					 * 该特征值是否支持 read 操作
-					 */
-					read: boolean;
-					/**
-					 * 该特征值是否支持 write 操作
-					 */
-					write: boolean;
-					/**
-					 * 该特征值是否支持 notify 操作
-					 */
-					notify: boolean;
-					/**
-					 * 该特征值是否支持 indicate 操作
-					 */
-					indicate: boolean;
-				}>;
-			}>;
-		} & ErrMsgResponse): void;
+		success(res: GetBLEDeviceCharacteristicsReponse): void;
 	}
 	/**
 	 * 获取蓝牙设备所有 characteristic（特征值）
@@ -1225,10 +1241,13 @@ declare namespace wx {
 		 */
 		value: ArrayBuffer;
 	}
+
+	interface ReadBLECharacteristicValueResponse extends ErrMsgResponse {
+		characteristic: Characteristic;
+	}
+
 	interface ReadBLECharacteristicValueOptions extends BLECharacteristicValueOptions {
-		success(res: {
-			characteristic: Characteristic;
-		} & ErrMsgResponse): void;
+		success(res: ReadBLECharacteristicValueResponse): void;
 	}
 	/**
 	 * 读取低功耗蓝牙设备的特征值的二进制数据值。
