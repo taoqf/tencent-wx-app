@@ -290,9 +290,7 @@ declare namespace wx {
 		pause(): void;	// 暂停录音
 		resume(): void;	// 继续录音
 		stop(): void;	// 停止录音
-		onStart(callback: (data: {
-			tempFilePath: string;	// 录音文件的临时路径
-		}) => void): void;	// 录音开始事件
+		onStart(callback: () => void): void;	// 录音开始事件
 		onPause(callback: () => void): void;	// 录音暂停事件
 		onStop(callback: (data: {
 			tempFilePath: string;	// 录音文件的临时路径
@@ -447,7 +445,9 @@ declare namespace wx {
 		}): void;
 
 		playbackRate(rate: 0.5 | 0.8 | 1.0 | 1.25 | 1.5): void;	// 设置倍速播放，支持的倍率有 0.5/0.8/1.0/1.25/1.5
-		requestFullScreen(): void;	// 进入全屏
+		requestFullScreen(options?: {
+			direction: 0 | 90 | -90;	// 设置全屏时视频的方向，不指定则根据宽高比自动判断。有效值为 0（正常竖向）, 90（屏幕逆时针90度）, -90（屏幕顺时针90度）
+		}): void;	// 进入全屏
 		exitFullScreen(): void;	// 退出全屏
 	}
 
@@ -947,7 +947,7 @@ declare namespace wx {
 
 // 设备-----扫码
 declare namespace wx {
-	type scanType = "qrCode" | "barCode";
+	type scanType = "qrCode" | "barCode" | "datamatrix" | "pdf417";
 	interface ScanCodeData {
 		/**
 		 * 所扫码的内容
@@ -968,6 +968,7 @@ declare namespace wx {
 	}
 	interface ScanCodeOptions extends BaseOptions {
 		onlyFromCamera?: boolean;	// 是否只能从相机扫码，不允许从相册选择图片
+		scanType?: scanType[];	// 扫码类型，参数类型是数组，二维码是'qrCode'，一维码是'barCode'，DataMatrix是‘datamatrix’，pdf417是‘pdf417’。
 		success?(res: ScanCodeData): void;
 	}
 	/**
@@ -1590,7 +1591,7 @@ declare namespace wx {
 		| 'easeInOut'	// 动画以低速开始和结束。
 		;
 	interface SetNavigationBarColorOptions extends BaseOptions {
-		frontColor: string;	// 前景颜色值，包括按钮、标题、状态栏的颜色，仅支持 #ffffff 和 #000000
+		frontColor: '#ffffff' | '#000000';	// 前景颜色值，包括按钮、标题、状态栏的颜色，仅支持 #ffffff 和 #000000
 		backgroundColor: string;	// 背景颜色值，有效值为十六进制颜色
 		animation?: Partial<{		// 动画效果
 			duration: number;					// 动画变化时间，默认0，单位：毫秒
