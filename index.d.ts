@@ -329,16 +329,16 @@ declare namespace wx {
 		pause(): void;	// 暂停
 		stop(): void;	// 停止
 		seek(position: number): void;	// 跳转到指定位置，单位 s
-		onCanplay(callback: (errCode: number) => {}): void;	// 背景音频进入可以播放状态，但不保证后面可以流畅播放
-		onPlay(callback: (errCode: number) => {}): void;	// 背景音频播放事件
-		onPause(callback: (errCode: number) => {}): void;	// 背景音频暂停事件
-		onStop(callback: (errCode: number) => {}): void;	// 背景音频停止事件
-		onEnded(callback: (errCode: number) => {}): void;	// 背景音频自然播放结束事件
-		onTimeUpdate(callback: (errCode: number) => {}): void;	// 背景音频播放进度更新事件
-		onPrev(callback: (errCode: number) => {}): void;	// 用户在系统音乐播放面板点击上一曲事件（iOS only）
-		onNext(callback: (errCode: number) => {}): void;	// 用户在系统音乐播放面板点击下一曲事件（iOS only）
-		onError(callback: (errCode: number) => {}): void;	// 背景音频播放错误事件
-		onWaiting(callback: (errCode: number) => {}): void;	// 音频加载中事件，当音频因为数据不足，需要停下来加载时会触发
+		onCanplay(callback: (errCode: number) => void): void;	// 背景音频进入可以播放状态，但不保证后面可以流畅播放
+		onPlay(callback: (errCode: number) => void): void;	// 背景音频播放事件
+		onPause(callback: (errCode: number) => void): void;	// 背景音频暂停事件
+		onStop(callback: (errCode: number) => void): void;	// 背景音频停止事件
+		onEnded(callback: (errCode: number) => void): void;	// 背景音频自然播放结束事件
+		onTimeUpdate(callback: (errCode: number) => void): void;	// 背景音频播放进度更新事件
+		onPrev(callback: (errCode: number) => void): void;	// 用户在系统音乐播放面板点击上一曲事件（iOS only）
+		onNext(callback: (errCode: number) => void): void;	// 用户在系统音乐播放面板点击下一曲事件（iOS only）
+		onError(callback: (errCode: number) => void): void;	// 背景音频播放错误事件
+		onWaiting(callback: (errCode: number) => void): void;	// 音频加载中事件，当音频因为数据不足，需要停下来加载时会触发
 	}
 	/** 获取全局唯一的背景音频管理器 backgroundAudioManager。 */
 	function getBackgroundAudioManager(): BackgroundAudioManager;
@@ -2203,7 +2203,7 @@ declare namespace wx {
 		selectAll(selector: string): NodesRef;
 		/** 选择显示区域，可用于获取显示区域的尺寸、滚动位置等信息，返回一个NodesRef对象实例。 */
 		selectViewport(): SelectorQuery;
-		exec(callback?: (res: any[]) => {}): SelectorQuery;
+		exec(callback?: (res: any[]) => void): SelectorQuery;
 	}
 
 	/**
