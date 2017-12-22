@@ -367,16 +367,16 @@ declare namespace wx {
 		stop(): void;	// 停止
 		seek(position: number): void;	// 跳转到指定位置，单位 s
 		destroy(): void;	// 销毁当前实例
-		onCanplay(callback: (errCode: number) => {}): void;	// 音频进入可以播放状态，但不保证后面可以流畅播放
-		onPlay(callback: (errCode: number) => {}): void;	// 音频播放事件
-		onPause(callback: (errCode: number) => {}): void;	// 音频暂停事件
-		onStop(callback: (errCode: number) => {}): void;	// 音频停止事件
-		onEnded(callback: (errCode: number) => {}): void;	// 音频自然播放结束事件
-		onTimeUpdate(callback: (errCode: number) => {}): void;	// 音频播放进度更新事件
-		onError(callback: (errCode: number) => {}): void;	// 音频播放错误事件
-		onWaiting(callback: (errCode: number) => {}): void;	// 音频加载中事件，当音频因为数据不足，需要停下来加载时会触发
-		onSeeking(callback: (errCode: number) => {}): void;	// 音频进行 seek 操作事件
-		onSeeked(callback: (errCode: number) => {}): void;	// 音频完成 seek 操作事件
+		onCanplay(callback: (errCode: number) => void): void;	// 音频进入可以播放状态，但不保证后面可以流畅播放
+		onPlay(callback: (errCode: number) => void): void;	// 音频播放事件
+		onPause(callback: (errCode: number) => void): void;	// 音频暂停事件
+		onStop(callback: (errCode: number) => void): void;	// 音频停止事件
+		onEnded(callback: (errCode: number) => void): void;	// 音频自然播放结束事件
+		onTimeUpdate(callback: (errCode: number) => void): void;	// 音频播放进度更新事件
+		onError(callback: (errCode: number) => void): void;	// 音频播放错误事件
+		onWaiting(callback: (errCode: number) => void): void;	// 音频加载中事件，当音频因为数据不足，需要停下来加载时会触发
+		onSeeking(callback: (errCode: number) => void): void;	// 音频进行 seek 操作事件
+		onSeeked(callback: (errCode: number) => void): void;	// 音频完成 seek 操作事件
 	}
 	function createInnerAudioContext(): InnerAudioContext;
 }
