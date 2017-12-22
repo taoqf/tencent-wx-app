@@ -312,7 +312,7 @@ declare namespace wx {
 		readonly duration: number;	// 当前音频的长度（单位：s），只有在当前有合法的 src 时返回
 		readonly currentTime: number;	// 当前音频的播放位置（单位：s），只有在当前有合法的 src 时返回
 		readonly paused: boolean;	// 当前是是否暂停或停止状态，true 表示暂停或停止，false 表示正在播放
-		src: 'm4a' | 'aac' | 'mp3' | 'wav';	// 音频的数据源，默认为空字符串，当设置了新的 src 时，会自动开始播放 ，目前支持的格式有 m4a, aac, mp3, wav
+		src: string;	// 音频的数据源，默认为空字符串，当设置了新的 src 时，会自动开始播放 ，目前支持的格式有 m4a, aac, mp3, wav
 		startTime: number;	// 音频开始播放的位置（单位：s）
 		readonly buffered: number;	// 音频缓冲的时间点，仅保证当前播放时间点到此时间点内容已缓冲。
 		title: string;	// 音频标题，用于做原生音频播放器音频标题。原生音频播放器中的分享功能，分享出去的卡片标题，也将使用该值。
