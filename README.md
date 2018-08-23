@@ -1,13 +1,16 @@
 # tencent-wx-app
+
 微信小程序 DefinitelyTyped.
 
-# Install
+请移步 [@types/weixin-app](https://www.npmjs.com/package/@types/weixin-app)
 
-```
+## Install
+
+```sh
 npm i tencent-wx-app --save-dev
 ```
 
-# How to Use
+## How to Use
 
 ## add this module in your tsconfig.json
 
